@@ -1,6 +1,6 @@
 {
   "name": "@darkmatterhub/mcp-server",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Universal MCP server that emits Context Passport records for AI agent actions. Implements the Context Passport for MCP extension proposal.",
   "license": "Apache-2.0",
   "type": "module",
