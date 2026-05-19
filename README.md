@@ -2,7 +2,7 @@
 
 Universal MCP server that emits [Context Passport](https://contextpassport.com) records for AI agent decisions and actions. Drop into any MCP-compatible client (Claude Code, Cursor, Cline, Continue, ChatGPT Desktop, Zed, Goose, and others) to give your agent a `commit / verify / replay / export` toolset for verifiable, tamper-evident records.
 
-**Built by [DarkMatter](https://darkmatterhub.ai). Implements [Context Passport v1.0](https://github.com/contextpassport/spec), an open CC0 standard.**
+**Built by [DarkMatter](https://darkmatterhub.ai). Implements [Context Passport v2.0](https://github.com/contextpassport/spec), an open CC0 standard. Records emitted by this server use RFC 8785 (JCS) canonicalization and are byte-equivalent across the Python and TypeScript reference SDKs.**
 
 ## Install
 
@@ -81,12 +81,14 @@ Each adapter hooks into its specific dev tool's event lifecycle and routes event
 
 ## Verification
 
-Records are valid Context Passport v1.0 artifacts. Verify with any conformant implementation:
+Records are valid Context Passport v2.0 artifacts. Verify with any conformant implementation:
 
 ```bash
 pip install context-passport context-passport-conformance
-context-passport-conformance --vectors-dir <your-chain-dir>
+context-passport-conformance --level signed     # 9/9 vectors, no --vectors-dir needed
 ```
+
+The conformance package ships its vectors inside the wheel, so this is a one-line check against the public reference suite.
 
 Or use the offline reference verifier directly on the JSONL file:
 
