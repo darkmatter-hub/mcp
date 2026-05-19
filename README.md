@@ -13,7 +13,7 @@ In your MCP client's config (`claude_desktop_config.json`, Cursor's `mcp.json`, 
   "mcpServers": {
     "darkmatter": {
       "command": "npx",
-      "args": ["-y", "darkmatter-mcp-server"]
+      "args": ["-y", "@darkmatterhub/mcp-server"]
     }
   }
 }
