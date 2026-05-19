@@ -1,0 +1,50 @@
+{
+  "name": "@darkmatter/mcp-server",
+  "version": "0.1.0",
+  "description": "Universal MCP server that emits Context Passport records for AI agent actions. Implements the Context Passport for MCP extension proposal.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "darkmatter-mcp": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "tsx --test tests/server.test.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "agents",
+    "audit",
+    "verification",
+    "provenance",
+    "context-passport",
+    "darkmatter"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/darkmatter-hub/mcp.git"
+  },
+  "homepage": "https://darkmatterhub.ai",
+  "bugs": {
+    "url": "https://github.com/darkmatter-hub/mcp/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@contextpassport/core": "^1.0.0-alpha.1",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}
