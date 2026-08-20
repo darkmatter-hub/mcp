@@ -1,0 +1,50 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.darkmatter-hub/mcp-server",
+  "title": "DarkMatter",
+  "description": "Tamper-evident records of AI agent decisions. Verify offline, or publish a proof link.",
+  "version": "0.3.1",
+  "websiteUrl": "https://darkmatterhub.ai",
+  "repository": {
+    "url": "https://github.com/darkmatter-hub/mcp",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@darkmatterhub/mcp-server",
+      "version": "0.3.1",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeArguments": [
+        {
+          "type": "positional",
+          "value": "-y"
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "DARKMATTER_API_KEY",
+          "description": "Optional. Publishes each record to DarkMatter and returns a verification URL. Without it, records stay on local disk and verify offline.",
+          "isSecret": true
+        },
+        {
+          "name": "DARKMATTER_SHARE",
+          "description": "Optional. Set to 'true' to make published records readable by anyone holding the link. Off by default.",
+          "default": "false"
+        },
+        {
+          "name": "DARKMATTER_API_URL",
+          "description": "Optional. Override the API host. Defaults to https://darkmatterhub.ai."
+        },
+        {
+          "name": "DARKMATTER_MCP_STORE_DIR",
+          "description": "Optional. Directory for local record storage."
+        }
+      ]
+    }
+  ]
+}
