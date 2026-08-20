@@ -27,6 +27,30 @@ Restart the client. Five tools become available to your agent:
 - `darkmatter_export` — produce a portable proof bundle
 - `darkmatter_list_sessions` — see what sessions exist locally
 
+## Local by default, published when you ask
+
+With no configuration the server keeps every record on your own disk. The
+chain verifies offline through `darkmatter_verify`, so you can evaluate the
+whole idea without an account.
+
+Set an API key to publish records and get a link somebody else can check:
+
+| Variable | Effect |
+|---|---|
+| `DARKMATTER_API_KEY` | Publishes each record to DarkMatter and returns a `verify_url`. Get one at [darkmatterhub.ai](https://darkmatterhub.ai). |
+| `DARKMATTER_SHARE` | Set to `true` to make published records readable by anyone with the link. Off by default, because publishing is not something to do to your records without being asked. |
+| `DARKMATTER_API_URL` | Override the API host. Defaults to `https://darkmatterhub.ai`. |
+| `DARKMATTER_MCP_STORE_DIR` | Where local records are written. |
+
+`commit` reports which of the two happened, in the `storage` field. If
+publishing fails the record is still committed locally and the error is
+returned alongside it, so a network problem cannot cost you the record.
+
+> **Changed in 0.3.0.** Earlier versions returned a
+> `https://darkmatterhub.ai/r/{id}` link for every commit while making no
+> network calls at all, so the link always 404ed. A verification URL is now
+> returned only when there is a published record behind it.
+
 ## What gets captured
 
 Whatever the agent (or user) explicitly invokes via `darkmatter_commit`. Auto-capture of every tool call without explicit invocation is a separate component (see [Auto-capture](#auto-capture) below).
@@ -42,7 +66,8 @@ Agent:   Calls darkmatter_commit({
            role: "compliance",
            event_type: "commit"
          })
-Result:  { ok: true, passport: {...}, verify_url: "https://darkmatterhub.ai/r/ctx_..." }
+Result:  { ok: true, passport: {...}, storage: "local", verify_url: null,
+           note: "Saved locally and verifiable offline..." }
 ```
 
 The passport is signed (if a key is configured), hash-chained to the previous commit in the session, and stored locally at `~/.darkmatter/mcp/<session_id>/chain.jsonl`.

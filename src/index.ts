@@ -128,7 +128,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     let result: unknown;
     switch (name) {
-      case "darkmatter_commit":         result = commit(args as never);           break;
+      case "darkmatter_commit":         result = await commit(args as never);           break;
       case "darkmatter_verify":         result = verify(args as never);           break;
       case "darkmatter_replay":         result = replay(args as never);           break;
       case "darkmatter_export":         result = exportBundle(args as never);     break;
