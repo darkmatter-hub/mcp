@@ -1,9 +1,9 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.darkmatter-hub/mcp-server",
+  "name": "io.github.darkmatter-hub/verifiable-agent-audit-trail",
   "title": "DarkMatter",
   "description": "Tamper-evident records of AI agent decisions. Verify offline, or publish a proof link.",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "websiteUrl": "https://darkmatterhub.ai",
   "repository": {
     "url": "https://github.com/darkmatter-hub/mcp",
@@ -14,7 +14,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@darkmatterhub/mcp-server",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
