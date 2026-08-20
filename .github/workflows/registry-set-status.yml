@@ -1,0 +1,92 @@
+name: Set MCP Registry entry status
+
+# Marks a registry entry active, deprecated or deleted.
+#
+# Needed because a registry entry's name is its identity: renaming a server
+# means publishing a second entry, and the first one stays live pointing at the
+# same npm package. Two active entries for one package is worse than one badly
+# named entry, since a reader has no way to tell which is current.
+#
+# Authentication is GitHub OIDC, the same as publishing, so there are no
+# secrets. The audience is the registry origin, which is what the official
+# publisher derives from its --registry URL.
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_name:
+        description: 'Full registry name, e.g. io.github.darkmatter-hub/mcp-server'
+        required: true
+      status:
+        description: 'New lifecycle status'
+        required: true
+        default: deprecated
+        type: choice
+        options: [active, deprecated, deleted]
+      message:
+        description: 'Reason, shown to readers (max 500 chars)'
+        required: false
+        default: ''
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  REGISTRY: https://registry.modelcontextprotocol.io
+
+jobs:
+  set-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Exchange the GitHub OIDC token for a registry token
+        id: auth
+        run: |
+          set -euo pipefail
+          oidc=$(curl -sS --fail \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$REGISTRY" | jq -r '.value')
+          [ -n "$oidc" ] && [ "$oidc" != "null" ] || { echo "::error::no OIDC token"; exit 1; }
+
+          token=$(curl -sS --fail -X POST "$REGISTRY/v0/auth/github-oidc" \
+            -H 'Content-Type: application/json' \
+            -d "$(jq -nc --arg t "$oidc" '{oidc_token: $t}')" | jq -r '.registry_token')
+          [ -n "$token" ] && [ "$token" != "null" ] || { echo "::error::token exchange failed"; exit 1; }
+
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+          echo "Authenticated to the registry."
+
+      - name: Update status
+        env:
+          TOKEN: ${{ steps.auth.outputs.token }}
+          NAME: ${{ inputs.server_name }}
+          STATUS: ${{ inputs.status }}
+          MESSAGE: ${{ inputs.message }}
+        run: |
+          set -euo pipefail
+          body=$(jq -nc --arg s "$STATUS" --arg m "$MESSAGE" \
+            'if $m == "" then {status: $s} else {status: $s, statusMessage: $m} end')
+
+          encoded=$(jq -rn --arg n "$NAME" '$n|@uri')
+          code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X PATCH \
+            "$REGISTRY/v0/servers/$encoded/status" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H 'Content-Type: application/json' \
+            -d "$body")
+
+          cat /tmp/out.json
+          echo
+          [ "$code" = "200" ] || { echo "::error::registry returned HTTP $code"; exit 1; }
+          echo "$NAME is now $STATUS."
+
+      - name: Confirm
+        env:
+          NAME: ${{ inputs.server_name }}
+        run: |
+          set -euo pipefail
+          sleep 5
+          encoded=$(jq -rn --arg n "$NAME" '$n|@uri')
+          curl -sS "$REGISTRY/v0/servers/$encoded/versions" \
+            | jq -r '.servers[]? | "  \(.server.version)  \(._meta["io.modelcontextprotocol.registry/official"].status)"' \
+            || echo "  (could not read back)"
