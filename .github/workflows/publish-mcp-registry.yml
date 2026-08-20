@@ -1,0 +1,85 @@
+name: Publish to MCP Registry
+
+# Lists this server in the official MCP registry, which is where MCP clients
+# and directories look for servers. Being absent from it means the connector is
+# effectively undiscoverable unless somebody already knows the package name.
+#
+# Authentication is GitHub OIDC, so there are no secrets to store or rotate.
+# The OIDC token proves this workflow runs in darkmatter-hub, which is what
+# entitles it to publish under the io.github.darkmatter-hub namespace.
+#
+# npm publishing is deliberately NOT done here. The npm account requires a
+# one-time password for writes, which no unattended workflow can supply.
+# Publishing to npm stays a manual step; automating it would mean issuing an
+# npm automation token that bypasses 2FA, which is a real reduction in account
+# security for very little gain at this release cadence.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # required for OIDC
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The registry proves npm ownership by fetching the published package and
+      # checking that it carries `mcpName`. If npm has not been published yet,
+      # or was published without that field, the registry rejects the
+      # submission with a message that does not make the cause obvious. Check
+      # it here instead, where the fix is stated plainly.
+      - name: Verify the npm package is ready for the registry
+        run: |
+          set -euo pipefail
+          expected=$(jq -r '.name' server.json)
+          identifier=$(jq -r '.packages[0].identifier' server.json)
+          wanted_version=$(jq -r '.packages[0].version' server.json)
+
+          echo "Registry name: $expected"
+          echo "npm package:   $identifier@$wanted_version"
+
+          meta=$(curl -sS --fail "https://registry.npmjs.org/${identifier//\//%2f}/$wanted_version" || true)
+          if [ -z "$meta" ]; then
+            echo "::error::$identifier@$wanted_version is not on npm yet. Publish it first: npm publish --access public"
+            exit 1
+          fi
+
+          actual=$(printf '%s' "$meta" | jq -r '.mcpName // empty')
+          if [ "$actual" != "$expected" ]; then
+            echo "::error::npm package mcpName is '${actual:-absent}', expected '$expected'. Add mcpName to package.json and republish."
+            exit 1
+          fi
+          echo "npm package carries the correct mcpName."
+
+      - name: Install mcp-publisher
+        run: |
+          set -euo pipefail
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" \
+            | tar xz mcp-publisher
+          chmod +x mcp-publisher
+          ./mcp-publisher --version || true
+
+      - name: Authenticate to the MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish
+        run: ./mcp-publisher publish
+
+      - name: Confirm the listing is live
+        run: |
+          set -euo pipefail
+          name=$(jq -r '.name' server.json)
+          sleep 5
+          found=$(curl -sS "https://registry.modelcontextprotocol.io/v0/servers?search=darkmatter" \
+            | jq -r --arg n "$name" '[.servers[]?.server.name] | index($n) // empty')
+          if [ -z "$found" ]; then
+            echo "::warning::Published, but the search index has not caught up yet."
+          else
+            echo "Listed in the registry as $name."
+          fi
