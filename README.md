@@ -27,6 +27,18 @@ Restart the client. Five tools become available to your agent:
 - `darkmatter_export` — produce a portable proof bundle
 - `darkmatter_list_sessions` — see what sessions exist locally
 
+## Bundles explain themselves
+
+`darkmatter_export` produces a bundle that a stranger can act on. Alongside the
+records it carries the format name, a link to the specification, whether the
+chain was intact at export time, and the exact command to verify it in Python or
+TypeScript, plus what a failure looks like.
+
+That matters because the bundle is the artifact that leaves your machine. It
+goes to an auditor, a regulator or a counterparty who has never heard of this
+format, and the whole claim is that they can check it without trusting whoever
+sent it. A bundle that does not say how is asking to be trusted.
+
 ## Local by default, published when you ask
 
 With no configuration the server keeps every record on your own disk. The

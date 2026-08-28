@@ -1,6 +1,6 @@
 {
   "name": "@darkmatterhub/mcp-server",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "mcpName": "io.github.darkmatter-hub/verifiable-agent-audit-trail",
   "description": "Universal MCP server that emits Context Passport records for AI agent actions. Implements the Context Passport for MCP extension proposal.",
   "license": "Apache-2.0",

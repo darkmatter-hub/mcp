@@ -175,7 +175,7 @@ export async function commit(args: CommitArgs): Promise<{
     chain_position: chainPosition,
     note: API_KEY
       ? "Saved locally. Publishing to DarkMatter failed, so there is no shareable link for this record."
-      : "Saved locally and verifiable offline with darkmatter_verify. Set DARKMATTER_API_KEY to publish records and get a link others can check.",
+      : "Saved locally and verifiable offline with darkmatter_verify. To publish a record and get a link a third party can check, create a free key at https://darkmatterhub.ai/signup and set DARKMATTER_API_KEY.",
     publish_error: result.error,
   };
 }
@@ -224,10 +224,47 @@ export function replay(args: { session_id?: string; id?: string }): {
 
 export function exportBundle(args: { session_id?: string }): {
   ok: true;
-  bundle: ReturnType<typeof store.exportChain>;
+  bundle: Record<string, unknown>;
 } {
   const sessionId = args.session_id ?? "default";
-  return { ok: true, bundle: store.exportChain(sessionId) };
+  const base = store.exportChain(sessionId);
+  const chain = store.readChain(sessionId);
+
+  // A bundle is the one artifact that leaves the building. Somebody hands it to
+  // an auditor, a regulator or a counterparty who has never heard of this
+  // format, and until now it arrived as an unexplained blob: session id,
+  // timestamp, exporter, an array of objects. Nothing said what it was, that it
+  // could be checked at all, or how to check it without trusting whoever sent
+  // it.
+  //
+  // That last part is the entire claim of the format, so the bundle now carries
+  // it. Everything below is static text and one verify() call; no network, no
+  // account, nothing that can fail at export time.
+  return {
+    ok: true,
+    bundle: {
+      format: "context-passport-bundle",
+      format_version: "1.0",
+      spec: "https://github.com/contextpassport/spec",
+      record_schema: "https://contextpassport.com/schema/v2.json",
+      ...base,
+      chain_intact: verifyChain(chain),
+      how_to_verify: {
+        summary:
+          "Every record commits to the hash of the one before it. Editing any record changes its hash and breaks verification of every record after it. You can confirm that yourself, offline, without trusting whoever gave you this file.",
+        python: [
+          "pip install context-passport",
+          "python -c \"import json,sys; from context_passport import verify_chain; print(verify_chain(json.load(open('bundle.json'))['passports']))\"",
+        ],
+        typescript: [
+          "npm install @contextpassport/core",
+          "node -e \"const {verifyChain}=require('@contextpassport/core');console.log(verifyChain(require('./bundle.json').passports))\"",
+        ],
+        expect:
+          "true if the chain is intact. Change one character in any payload and run it again: it returns false, and the record it disagrees with is the one that was altered.",
+      },
+    },
+  };
 }
 
 export function listSessions(): { ok: true; sessions: string[] } {

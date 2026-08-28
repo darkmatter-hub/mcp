@@ -159,3 +159,39 @@ test("an API error status is reported rather than swallowed", async () => {
     cleanup();
   }
 });
+
+test("an exported bundle explains itself to somebody who has never seen one", async () => {
+  // The bundle is the one artifact that leaves the building: somebody hands it
+  // to an auditor, a regulator or a counterparty who has never heard of this
+  // format. It used to arrive as session id, timestamp, exporter and an array
+  // of objects, with nothing saying what it was or that it could be checked.
+  //
+  // Since the whole claim of the format is that a stranger can verify it
+  // without trusting the sender, the bundle has to say so and say how.
+  const { mod, cleanup } = await loadTools({});
+  try {
+    await mod.commit({ session_id: "s-bundle", input: "a", output: "b" });
+    await mod.commit({ session_id: "s-bundle", input: "c", output: "d" });
+    const { bundle } = mod.exportBundle({ session_id: "s-bundle" });
+
+    assert.equal(bundle.format, "context-passport-bundle");
+    assert.equal(bundle.spec, "https://github.com/contextpassport/spec");
+    assert.ok(bundle.record_schema, "a reader must be able to find the record schema");
+    assert.equal(bundle.chain_intact, true);
+    assert.equal(bundle.passports.length, 2);
+
+    const how = bundle.how_to_verify;
+    assert.ok(how && how.summary, "the bundle must say what verification proves");
+    assert.ok(Array.isArray(how.python) && how.python.length >= 2);
+    assert.ok(Array.isArray(how.typescript) && how.typescript.length >= 2);
+
+    // The instructions name real packages. Shipping a command that does not
+    // run is the failure this whole file exists to prevent.
+    assert.ok(how.python.join(" ").includes("context-passport"));
+    assert.ok(how.typescript.join(" ").includes("@contextpassport/core"));
+    assert.ok(how.expect && /false/i.test(how.expect),
+      "the bundle should tell the reader what a failure looks like, not only a pass");
+  } finally {
+    cleanup();
+  }
+});
